@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="bankdb" default="help" basedir=".">
+
+  <property file="db.properties"/>
+
+  <property name="db.driver" value="org.postgresql.Driver"/>
+  <property name="db.host" value="localhost"/>
+  <property name="db.port" value="5432"/>
+  <property name="db.name" value="bankdb"/>
+  <property name="db.user" value="postgres"/>
+  <property name="db.pass" value="postgres"/>
+
+  <property name="db.url" value="jdbc:postgresql://${db.host}:${db.port}/${db.name}"/>
+
+  <property name="db.admin.url" value="jdbc:postgresql://${db.host}:${db.port}/postgres"/>
+
+  <property name="jdbc.jar" value="lib/postgresql.jar"/>
+
+  <path id="jdbc.classpath">
+    <pathelement location="${jdbc.jar}"/>
+  </path>
+
+  <target name="help">
+    <echo>
+Targets:
+  ant create    - создать БД + создать схему (таблицы/типы)
+  ant init      - create + заполнить данными
+  ant show      - вывести содержимое таблиц (SELECT)
+  ant clear     - очистить все данные (TRUNCATE)
+  ant drop      - удалить схему (DROP TABLE/TYPE)
+    </echo>
+  </target>
+
+  <target name="create-db">
+    <sql
+      driver="${db.driver}"
+      url="${db.admin.url}"
+      userid="${db.user}"
+      password="${db.pass}"
+      classpathref="jdbc.classpath"
+      src="sql/create_db.sql"
+      onerror="continue"
+      autocommit="true"
+      print="true"/>
+  </target>
+
+  <target name="schema">
+    <sql
+      driver="${db.driver}"
+      url="${db.url}"
+      userid="${db.user}"
+      password="${db.pass}"
+      classpathref="jdbc.classpath"
+      src="sql/schema.sql"
+      onerror="abort"
+      autocommit="true"
+      print="true"/>
+  </target>
+
+  <target name="seed">
+    <sql
+      driver="${db.driver}"
+      url="${db.url}"
+      userid="${db.user}"
+      password="${db.pass}"
+      classpathref="jdbc.classpath"
+      src="sql/seed.sql"
+      onerror="abort"
+      autocommit="true"
+      print="true"/>
+  </target>
+
+  <target name="show">
+    <sql
+      driver="${db.driver}"
+      url="${db.url}"
+      userid="${db.user}"
+      password="${db.pass}"
+      classpathref="jdbc.classpath"
+      src="sql/show.sql"
+      onerror="abort"
+      autocommit="true"
+      print="true"/>
+  </target>
+
+  <target name="clear">
+    <sql
+      driver="${db.driver}"
+      url="${db.url}"
+      userid="${db.user}"
+      password="${db.pass}"
+      classpathref="jdbc.classpath"
+      src="sql/clear.sql"
+      onerror="abort"
+      autocommit="true"
+      print="true"/>
+  </target>
+
+  <target name="drop">
+    <sql
+      driver="${db.driver}"
+      url="${db.url}"
+      userid="${db.user}"
+      password="${db.pass}"
+      classpathref="jdbc.classpath"
+      src="sql/drop_schema.sql"
+      onerror="continue"
+      autocommit="true"
+      print="true"/>
+  </target>
+
+  <target name="create" depends="create-db,schema"/>
+  <target name="init" depends="create,seed"/>
+
+</project>
