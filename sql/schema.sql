@@ -29,7 +29,6 @@ CREATE TABLE IF NOT EXISTS clients (
   id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   department_id BIGINT NOT NULL REFERENCES departments(id),
   type          client_type NOT NULL,
-  count         INTEGER,
   surname       TEXT,
   second_name   TEXT,
   passport      TEXT,
@@ -50,7 +49,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   client_id      BIGINT NOT NULL REFERENCES clients(id),
   special_number TEXT NOT NULL UNIQUE,
-  points         INTEGER NOT NULL DEFAULT 0,
+  points         FLOAT NOT NULL DEFAULT 0,
   currency_id    BIGINT NOT NULL REFERENCES currencys(id),
   status         status NOT NULL DEFAULT 'active',
   account_type   account_type NOT NULL,
@@ -74,7 +73,7 @@ CREATE TABLE IF NOT EXISTS deposit (
   payment_method    payment_method NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS "savings account" (
+CREATE TABLE IF NOT EXISTS saving_account (
   id            BIGINT PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
   interest_rate NUMERIC(8,4)  NOT NULL,
   max_limit     NUMERIC(14,2) NOT NULL

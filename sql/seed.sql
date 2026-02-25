@@ -16,47 +16,42 @@ WITH dep AS (
   SELECT id, name FROM departments
 ),
 c1 AS (
-  INSERT INTO clients(department_id, type, count, surname, second_name, passport, snils, phone, address, link_to_photo)
+  INSERT INTO clients(department_id, type, surname, second_name, passport, snils, phone, address, link_to_photo)
   VALUES (
     (SELECT id FROM dep WHERE name='Central Branch'),
     'natural person',
-    1,
     'Ivanov', 'Ivan', '4500 123456', '112-233-445 95', '+49-111-111', 'Frankfurt, Center', 'https://example.local/p/ivanov.jpg'
   ) RETURNING id
 ),
 c2 AS (
-  INSERT INTO clients(department_id, type, count, surname, second_name, passport, snils, phone, address, link_to_photo)
+  INSERT INTO clients(department_id, type, surname, second_name, passport, snils, phone, address, link_to_photo)
   VALUES (
     (SELECT id FROM dep WHERE name='North Branch'),
     'natural person',
-    2,
     'Petrov', 'Petr', '4501 654321', '223-344-556 06', '+49-222-222', 'Frankfurt, North', NULL
   ) RETURNING id
 ),
 c3 AS (
-  INSERT INTO clients(department_id, type, count, surname, second_name, passport, snils, phone, address, link_to_photo)
+  INSERT INTO clients(department_id, type, surname, second_name, passport, snils, phone, address, link_to_photo)
   VALUES (
     (SELECT id FROM dep WHERE name='South Branch'),
     'natural person',
-    1,
     'Smirnova', 'Anna', '4502 111222', '334-455-667 17', '+49-333-333', 'Frankfurt, South', NULL
   ) RETURNING id
 ),
 c4 AS (
-  INSERT INTO clients(department_id, type, count, surname, second_name, passport, snils, phone, address, link_to_photo)
+  INSERT INTO clients(department_id, type, surname, second_name, passport, snils, phone, address, link_to_photo)
   VALUES (
     (SELECT id FROM dep WHERE name='Central Branch'),
     'legal entity',
-    50,
     'OOO "Romashka"', NULL, NULL, NULL, '+49-444-444', 'Frankfurt, Industrial zone', NULL
   ) RETURNING id
 ),
 c5 AS (
-  INSERT INTO clients(department_id, type, count, surname, second_name, passport, snils, phone, address, link_to_photo)
+  INSERT INTO clients(department_id, type, surname, second_name, passport, snils, phone, address, link_to_photo)
   VALUES (
     (SELECT id FROM dep WHERE name='North Branch'),
     'legal entity',
-    200,
     'JSC "Tech"', NULL, NULL, NULL, '+49-555-555', 'Frankfurt, Business district', NULL
   ) RETURNING id
 )
@@ -113,7 +108,7 @@ acc AS (
   )
   RETURNING id
 )
-INSERT INTO "savings account"(id, interest_rate, max_limit)
+INSERT INTO saving_account(id, interest_rate, max_limit)
 SELECT id, 7.2000, 1000000.00 FROM acc;
 
 WITH cl AS (
@@ -131,7 +126,7 @@ acc AS (
   )
   RETURNING id
 )
-INSERT INTO "savings account"(id, interest_rate, max_limit)
+INSERT INTO saving_account(id, interest_rate, max_limit)
 SELECT id, 3.5000, 5000000.00 FROM acc;
 
 WITH cl AS (

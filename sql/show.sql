@@ -4,7 +4,7 @@ SELECT * FROM currencys ORDER BY id;
 SELECT * FROM accounts ORDER BY id;
 SELECT * FROM credit ORDER BY id;
 SELECT * FROM deposit ORDER BY id;
-SELECT * FROM "savings account" ORDER BY id;
+SELECT * FROM saving_account ORDER BY id;
 
 SELECT a.id AS account_id, a.special_number, a.account_type, a.status,
        c.id AS client_id, c.surname, c.second_name,
