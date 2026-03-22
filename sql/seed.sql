@@ -164,3 +164,11 @@ acc AS (
 )
 INSERT INTO credit(id, max_credit, current_dept, interest_rate, payment_method)
 SELECT id, 10000.00, 1200.00, 19.9000, 'manual' FROM acc;
+
+INSERT INTO account_operations(account_id, kind, amount, description)
+SELECT a.id, 'credit', 500.00, 'Initial deposit' FROM accounts a WHERE a.special_number = 'ACC-0001';
+INSERT INTO account_operations(account_id, kind, amount, description)
+SELECT a.id, 'debit', 380.00, 'Payment' FROM accounts a WHERE a.special_number = 'ACC-0001';
+
+INSERT INTO account_operations(account_id, kind, amount, description)
+SELECT a.id, 'credit', 1500.00, 'Opening deposit' FROM accounts a WHERE a.special_number = 'ACC-0002';

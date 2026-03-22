@@ -1,2 +1,5 @@
 .settings/
 bin/
+build/
+db.properties
+lib/*.jar

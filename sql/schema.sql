@@ -1,20 +1,4 @@
 
-DO $$ BEGIN
-  CREATE TYPE payment_method AS ENUM ('auto', 'manual');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-  CREATE TYPE status AS ENUM ('active', 'closed', 'suspended');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-  CREATE TYPE account_type AS ENUM ('credit', 'deposit', 'saving');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-  CREATE TYPE client_type AS ENUM ('legal entity', 'natural person');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
 CREATE TABLE IF NOT EXISTS departments (
   id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name          TEXT NOT NULL,
@@ -28,7 +12,7 @@ CREATE TABLE IF NOT EXISTS departments (
 CREATE TABLE IF NOT EXISTS clients (
   id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   department_id BIGINT NOT NULL REFERENCES departments(id),
-  type          client_type NOT NULL,
+  type          TEXT NOT NULL CHECK (type IN ('legal entity', 'natural person')),
   surname       TEXT,
   second_name   TEXT,
   passport      TEXT,
@@ -51,10 +35,11 @@ CREATE TABLE IF NOT EXISTS accounts (
   special_number TEXT NOT NULL UNIQUE,
   points         FLOAT NOT NULL DEFAULT 0,
   currency_id    BIGINT NOT NULL REFERENCES currencys(id),
-  status         status NOT NULL DEFAULT 'active',
-  account_type   account_type NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'closed', 'suspended')),
+  account_type   TEXT NOT NULL CHECK (account_type IN ('credit', 'deposit', 'saving')),
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  closed_at      TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS credit (
@@ -62,7 +47,7 @@ CREATE TABLE IF NOT EXISTS credit (
   max_credit     NUMERIC(14,2) NOT NULL,
   current_dept   NUMERIC(14,2) NOT NULL DEFAULT 0,
   interest_rate  NUMERIC(8,4)  NOT NULL,
-  payment_method payment_method NOT NULL
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('auto', 'manual'))
 );
 
 CREATE TABLE IF NOT EXISTS deposit (
@@ -70,7 +55,7 @@ CREATE TABLE IF NOT EXISTS deposit (
   initial_amount    NUMERIC(14,2) NOT NULL,
   end_date          DATE NOT NULL,
   automatic_renewal BOOLEAN NOT NULL DEFAULT FALSE,
-  payment_method    payment_method NOT NULL
+  payment_method    TEXT NOT NULL CHECK (payment_method IN ('auto', 'manual'))
 );
 
 CREATE TABLE IF NOT EXISTS saving_account (
@@ -79,6 +64,16 @@ CREATE TABLE IF NOT EXISTS saving_account (
   max_limit     NUMERIC(14,2) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS account_operations (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  account_id  BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL CHECK (kind IN ('credit', 'debit')),
+  amount      NUMERIC(14,2) NOT NULL,
+  description TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_clients_department_id ON clients(department_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_client_id     ON accounts(client_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_currency_id   ON accounts(currency_id);
+CREATE INDEX IF NOT EXISTS idx_account_operations_account_id ON account_operations(account_id);

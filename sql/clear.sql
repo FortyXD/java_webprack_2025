@@ -1,7 +1,8 @@
 TRUNCATE TABLE
+  account_operations,
   credit,
   deposit,
-  "savings account",
+  saving_account,
   accounts,
   clients,
   departments,

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Bank DAO Tests" verbose="1">
+  <test name="DAO Tests">
+    <classes>
+      <class name="ru.javaprac.bank.dao.DepartmentDaoTest"/>
+      <class name="ru.javaprac.bank.dao.ClientDaoTest"/>
+      <class name="ru.javaprac.bank.dao.CurrencyDaoTest"/>
+      <class name="ru.javaprac.bank.dao.AccountDaoTest"/>
+      <class name="ru.javaprac.bank.dao.StatisticsDaoTest"/>
+    </classes>
+  </test>
+</suite>

@@ -14,21 +14,73 @@
 
   <property name="db.admin.url" value="jdbc:postgresql://${db.host}:${db.port}/postgres"/>
 
-  <property name="jdbc.jar" value="lib/postgresql.jar"/>
+  <property name="jdbc.jar" value="lib/postgresql-42.7.3.jar"/>
+  <property name="src.dir" value="src"/>
+  <property name="build.dir" value="build/classes"/>
+  <property name="test.src.dir" value="test"/>
+  <property name="test.build.dir" value="build/test-classes"/>
+  <property name="test.reports.dir" value="build/test-reports"/>
+  <property name="test.suite" value="test/testng.xml"/>
 
   <path id="jdbc.classpath">
     <pathelement location="${jdbc.jar}"/>
   </path>
 
+  <path id="project.classpath">
+    <path refid="jdbc.classpath"/>
+    <fileset dir="lib" includes="*.jar"/>
+    <pathelement location="${build.dir}"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="project.classpath"/>
+    <pathelement location="${test.build.dir}"/>
+  </path>
+
   <target name="help">
     <echo>
 Targets:
-  ant create    - создать БД + создать схему (таблицы/типы)
-  ant init      - create + заполнить данными
-  ant show      - вывести содержимое таблиц (SELECT)
-  ant clear     - очистить все данные (TRUNCATE)
-  ant drop      - удалить схему (DROP TABLE/TYPE)
+  ant all           - всё в одном: init + compile + test
+  ant compile       - компиляция проекта
+  ant compile-tests - компиляция тестов
+  ant test          - запуск тестов TestNG
+  ant create        - создать БД + создать схему (таблицы/типы)
+  ant init          - create + заполнить данными
+  ant show          - вывести содержимое таблиц (SELECT)
+  ant clear         - очистить все данные (TRUNCATE)
+  ant drop          - удалить схему (DROP TABLE/TYPE)
     </echo>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="${build.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="project.classpath"
+           includeantruntime="false" debug="true" encoding="UTF-8">
+      <include name="**/*.java"/>
+    </javac>
+    <copy todir="${build.dir}">
+      <fileset dir="${src.dir}" includes="**/*.xml"/>
+    </copy>
+  </target>
+
+  <target name="compile-tests" depends="compile">
+    <mkdir dir="${test.build.dir}"/>
+    <javac srcdir="${test.src.dir}" destdir="${test.build.dir}" classpathref="test.classpath"
+           includeantruntime="false" debug="true" encoding="UTF-8">
+      <include name="**/*.java"/>
+    </javac>
+  </target>
+
+  <target name="test" depends="compile-tests">
+    <mkdir dir="${test.reports.dir}"/>
+    <java classname="org.testng.TestNG" classpathref="test.classpath" failonerror="true" fork="true">
+      <sysproperty key="hibernate.connection.url" value="${db.url}"/>
+      <sysproperty key="hibernate.connection.username" value="${db.user}"/>
+      <sysproperty key="hibernate.connection.password" value="${db.pass}"/>
+      <arg value="-d"/>
+      <arg value="${test.reports.dir}"/>
+      <arg value="${test.suite}"/>
+    </java>
   </target>
 
   <target name="create-db">
@@ -110,6 +162,8 @@ Targets:
   </target>
 
   <target name="create" depends="create-db,schema"/>
-  <target name="init" depends="create,seed"/>
+  <target name="init" depends="create,clear,seed"/>
+
+  <target name="all" depends="init,test" description="Всё в одном: init + compile + test"/>
 
 </project>

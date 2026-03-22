@@ -1,0 +1,163 @@
+import java.util.Properties
+
+plugins {
+    id "java"
+}
+
+group = "ru.javaprac.bank"
+version = "1.0.0"
+
+repositories {
+    mavenCentral()
+}
+
+def dbProps = new Properties()
+def dbPropsFile = file("db.properties")
+if (dbPropsFile.exists()) {
+    dbPropsFile.withInputStream { dbProps.load(it) }
+}
+
+def dbHost = dbProps.getProperty("db.host", "localhost")
+def dbPort = dbProps.getProperty("db.port", "5432")
+def dbName = dbProps.getProperty("db.name", "bankdb")
+def dbUser = dbProps.getProperty("db.user", "postgres")
+def dbPass = dbProps.getProperty("db.pass", "postgres")
+def dbUrl = "jdbc:postgresql://${dbHost}:${dbPort}/${dbName}"
+def dbAdminUrl = "jdbc:postgresql://${dbHost}:${dbPort}/postgres"
+
+configurations {
+    jdbc
+}
+
+dependencies {
+    implementation "org.hibernate.orm:hibernate-core:6.2.33.Final"
+    implementation "jakarta.persistence:jakarta.persistence-api:3.1.0"
+    implementation "jakarta.transaction:jakarta.transaction-api:2.0.1"
+    implementation "org.jboss.logging:jboss-logging:3.5.3.Final"
+    implementation "com.fasterxml:classmate:1.6.0"
+    implementation "org.antlr:antlr4-runtime:4.13.1"
+    implementation "org.slf4j:slf4j-api:2.0.9"
+    runtimeOnly "org.slf4j:slf4j-simple:2.0.9"
+    runtimeOnly "org.postgresql:postgresql:42.7.3"
+    runtimeOnly "org.glassfish.jaxb:jaxb-runtime:4.0.2"
+    runtimeOnly "org.glassfish.jaxb:jaxb-core:4.0.2"
+    runtimeOnly "com.sun.istack:istack-commons-runtime:4.1.2"
+    runtimeOnly "org.eclipse.angus:angus-activation:2.0.1"
+    runtimeOnly "jakarta.activation:jakarta.activation-api:2.1.3"
+
+    testImplementation "org.testng:testng:7.10.2"
+
+    jdbc "org.postgresql:postgresql:42.7.3"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src"]
+        }
+        resources {
+            srcDirs = ["src"]
+            include "**/*.xml"
+        }
+    }
+    test {
+        java {
+            srcDirs = ["test"]
+        }
+        resources {
+            srcDirs = ["test"]
+            include "**/*.xml"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+}
+
+test {
+    useTestNG {
+        suites "test/testng.xml"
+    }
+    systemProperty "hibernate.connection.url", dbUrl
+    systemProperty "hibernate.connection.username", dbUser
+    systemProperty "hibernate.connection.password", dbPass
+    reports {
+        html.required = true
+        junitXml.required = true
+    }
+}
+
+def execSql = { String url, String script, String onError = "abort" ->
+    ant.sql(
+        driver: "org.postgresql.Driver",
+        url: url,
+        userid: dbUser,
+        password: dbPass,
+        classpath: configurations.jdbc.asPath,
+        src: script,
+        onerror: onError,
+        autocommit: "true",
+        print: "true"
+    )
+}
+
+tasks.register("createDb") {
+    group = "database"
+    description = "Create database if it does not exist"
+    doLast {
+        execSql(dbAdminUrl, "sql/create_db.sql", "continue")
+    }
+}
+
+tasks.register("schema") {
+    group = "database"
+    description = "Create/update database schema"
+    doLast {
+        execSql(dbUrl, "sql/schema.sql")
+    }
+}
+
+tasks.register("seed") {
+    group = "database"
+    description = "Fill database with initial data"
+    doLast {
+        execSql(dbUrl, "sql/seed.sql")
+    }
+}
+
+tasks.register("showDb") {
+    group = "database"
+    description = "Show seeded database data"
+    doLast {
+        execSql(dbUrl, "sql/show.sql")
+    }
+}
+
+tasks.register("clearDb") {
+    group = "database"
+    description = "Clear all data from tables"
+    doLast {
+        execSql(dbUrl, "sql/clear.sql")
+    }
+}
+
+tasks.register("dropDbSchema") {
+    group = "database"
+    description = "Drop schema objects"
+    doLast {
+        execSql(dbUrl, "sql/drop_schema.sql", "continue")
+    }
+}
+
+tasks.register("initDb") {
+    group = "database"
+    description = "Create DB, schema, clear and seed"
+    dependsOn "createDb", "schema", "clearDb", "seed"
+}
+
+tasks.register("all") {
+    group = "build"
+    description = "Initialize DB and run tests"
+    dependsOn "initDb", "test"
+}

@@ -1,0 +1,35 @@
+set -e
+cd "$(dirname "$0")"
+mkdir -p lib
+
+BASE="https://repo1.maven.org/maven2"
+get() {
+  g="$1"; a="$2"; v="$3"
+  path=$(echo "$g" | tr . /)
+  curl -sL -o "lib/$a-$v.jar" "$BASE/$path/$a/$v/$a-$v.jar"
+  echo "OK $a"
+}
+
+get "org.postgresql" "postgresql" "42.7.3"
+get "org.hibernate.orm" "hibernate-core" "6.2.33.Final"
+get "jakarta.persistence" "jakarta.persistence-api" "3.1.0"
+get "jakarta.transaction" "jakarta.transaction-api" "2.0.1"
+get "net.bytebuddy" "byte-buddy" "1.14.10"
+get "org.jboss.logging" "jboss-logging" "3.5.3.Final"
+get "com.fasterxml" "classmate" "1.6.0"
+get "org.antlr" "antlr4-runtime" "4.13.1"
+get "io.smallrye" "jandex" "3.0.5"
+get "org.hibernate.common" "hibernate-commons-annotations" "6.0.6.Final"
+get "org.testng" "testng" "7.10.2"
+get "com.beust" "jcommander" "1.82"
+get "org.slf4j" "slf4j-api" "2.0.9"
+get "org.slf4j" "slf4j-simple" "2.0.9"
+get "org.yaml" "snakeyaml" "2.2"
+get "jakarta.xml.bind" "jakarta.xml.bind-api" "4.0.2"
+get "org.glassfish.jaxb" "jaxb-runtime" "4.0.2"
+get "org.glassfish.jaxb" "jaxb-core" "4.0.2"
+get "com.sun.istack" "istack-commons-runtime" "4.1.2"
+get "org.eclipse.angus" "angus-activation" "2.0.1"
+get "jakarta.activation" "jakarta.activation-api" "2.1.3"
+
+echo "Done. lib/ contains $(ls lib/*.jar 2>/dev/null | wc -l) JARs"
