@@ -1,7 +1,6 @@
-import java.util.Properties
-
 plugins {
     id "java"
+    id "jacoco"
 }
 
 group = "ru.javaprac.bank"
@@ -11,17 +10,31 @@ repositories {
     mavenCentral()
 }
 
-def dbProps = new Properties()
+def dbProps = [:]
 def dbPropsFile = file("db.properties")
 if (dbPropsFile.exists()) {
-    dbPropsFile.withInputStream { dbProps.load(it) }
+    dbPropsFile.eachLine { line ->
+        def trimmed = line.trim()
+        if (!trimmed || trimmed.startsWith("#")) {
+            return
+        }
+
+        def separatorIndex = trimmed.indexOf("=")
+        if (separatorIndex <= 0) {
+            return
+        }
+
+        def key = trimmed.substring(0, separatorIndex).trim()
+        def value = trimmed.substring(separatorIndex + 1).trim()
+        dbProps[key] = value
+    }
 }
 
-def dbHost = dbProps.getProperty("db.host", "localhost")
-def dbPort = dbProps.getProperty("db.port", "5432")
-def dbName = dbProps.getProperty("db.name", "bankdb")
-def dbUser = dbProps.getProperty("db.user", "postgres")
-def dbPass = dbProps.getProperty("db.pass", "postgres")
+def dbHost = dbProps["db.host"] ?: "localhost"
+def dbPort = dbProps["db.port"] ?: "5432"
+def dbName = dbProps["db.name"] ?: "bankdb"
+def dbUser = dbProps["db.user"] ?: "postgres"
+def dbPass = dbProps["db.pass"] ?: "postgres"
 def dbUrl = "jdbc:postgresql://${dbHost}:${dbPort}/${dbName}"
 def dbAdminUrl = "jdbc:postgresql://${dbHost}:${dbPort}/postgres"
 
@@ -79,6 +92,15 @@ test {
     useTestNG {
         suites "test/testng.xml"
     }
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = false
+    }
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "Test summary: ${result.testCount} total, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped"
+        }
+    }
     systemProperty "hibernate.connection.url", dbUrl
     systemProperty "hibernate.connection.username", dbUser
     systemProperty "hibernate.connection.password", dbPass
@@ -88,7 +110,37 @@ test {
     }
 }
 
-def execSql = { String url, String script, String onError = "abort" ->
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            element = "CLASS"
+            includes = ["ru.javaprac.bank.dao.*"]
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = 0
+            }
+        }
+    }
+}
+
+test.finalizedBy jacocoTestReport
+
+def execSql = { url, script, onError = "abort" ->
     ant.sql(
         driver: "org.postgresql.Driver",
         url: url,

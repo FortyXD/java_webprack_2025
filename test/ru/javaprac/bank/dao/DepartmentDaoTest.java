@@ -60,6 +60,13 @@ public class DepartmentDaoTest extends TestBase {
     }
 
     @Test
+    public void searchByNameOrAddress_nullQuery_returnsAll() {
+        List<Department> all = dao.findAll();
+        List<Department> search = dao.searchByNameOrAddress(null);
+        assertEquals(search.size(), all.size());
+    }
+
+    @Test
     public void countClients_returnsCorrectCount() {
         List<Department> all = dao.findAll();
         assertFalse(all.isEmpty());
@@ -124,5 +131,10 @@ public class DepartmentDaoTest extends TestBase {
                 break;
             }
         }
+    }
+
+    @Test
+    public void deleteIfNoClients_whenDepartmentNotFound_returnsFalse() {
+        assertFalse(dao.deleteIfNoClients(999999L));
     }
 }

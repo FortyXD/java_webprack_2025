@@ -184,4 +184,85 @@ public class AccountDaoTest extends TestBase {
         assertTrue(a.get() instanceof DepositDetails);
         assertEquals(((DepositDetails) a.get()).getInitialAmount().doubleValue(), 5000, 0.01);
     }
+
+    @Test
+    public void createSavingAccount_persistsAccount() {
+        Client client = clientDao.findAll().get(0);
+        Currency curr = currencyDao.findByName("RUB").orElseThrow();
+        long id = dao.createSavingAccount(client, curr, "ACC-NEW-SV-" + System.currentTimeMillis(),
+            BigDecimal.valueOf(4.5), BigDecimal.valueOf(30000));
+        assertTrue(id > 0);
+        Optional<Account> a = dao.findById(id);
+        assertTrue(a.isPresent());
+        assertTrue(a.get() instanceof SavingDetails);
+        assertEquals(((SavingDetails) a.get()).getInterestRate().doubleValue(), 4.5, 0.01);
+    }
+
+    @Test
+    public void credit_whenAccountClosed_returnsFalse() {
+        Client client = clientDao.findAll().get(0);
+        Currency curr = currencyDao.findByName("RUB").orElseThrow();
+        long id = dao.createSavingAccount(client, curr, "ACC-CR-CLOSED-" + System.currentTimeMillis(),
+            BigDecimal.valueOf(4), BigDecimal.valueOf(1000));
+        assertTrue(dao.closeAccount(id), "Setup failed: account should be closable");
+        assertFalse(dao.credit(id, BigDecimal.ONE, "Must fail for closed account"));
+    }
+
+    @Test
+    public void debit_whenAccountNotExists_returnsFalse() {
+        assertFalse(dao.debit(999999L, BigDecimal.ONE, "No account"));
+    }
+
+    @Test
+    public void debit_whenAccountClosed_returnsFalse() {
+        Client client = clientDao.findAll().get(0);
+        Currency curr = currencyDao.findByName("RUB").orElseThrow();
+        long id = dao.createSavingAccount(client, curr, "ACC-DB-CLOSED-" + System.currentTimeMillis(),
+            BigDecimal.valueOf(3), BigDecimal.valueOf(500));
+        assertTrue(dao.closeAccount(id), "Setup failed: account should be closable");
+        assertFalse(dao.debit(id, BigDecimal.ONE, "Must fail for closed account"));
+    }
+
+    @Test
+    public void closeAccount_whenNotExists_returnsFalse() {
+        assertFalse(dao.closeAccount(999999L));
+    }
+
+    @Test
+    public void closeAccount_whenAlreadyClosed_returnsFalse() {
+        Client client = clientDao.findAll().get(0);
+        Currency curr = currencyDao.findByName("RUB").orElseThrow();
+        long id = dao.createSavingAccount(client, curr, "ACC-ALREADY-CLOSED-" + System.currentTimeMillis(),
+            BigDecimal.valueOf(5), BigDecimal.valueOf(5000));
+        assertTrue(dao.closeAccount(id), "First close should succeed");
+        assertFalse(dao.closeAccount(id), "Second close must fail");
+    }
+
+    @Test
+    public void findOperationsByAccount_whenNoOperations_returnsEmptyList() {
+        Client client = clientDao.findAll().get(0);
+        Currency curr = currencyDao.findByName("RUB").orElseThrow();
+        long id = dao.createSavingAccount(client, curr, "ACC-NO-OPS-" + System.currentTimeMillis(),
+            BigDecimal.valueOf(2), BigDecimal.valueOf(10000));
+        List<AccountOperation> ops = dao.findOperationsByAccount(id);
+        assertNotNull(ops);
+        assertTrue(ops.isEmpty(), "Fresh account should have no operations");
+    }
+
+    @Test
+    public void findFiltered_withAllFilters_returnsCreatedAccount() {
+        Client client = clientDao.findAll().get(0);
+        Currency curr = currencyDao.findByName("RUB").orElseThrow();
+        long id = dao.createSavingAccount(client, curr, "ACC-FILTER-ALL-" + System.currentTimeMillis(),
+            BigDecimal.valueOf(6), BigDecimal.valueOf(15000));
+        Instant now = Instant.now();
+        List<Account> filtered = dao.findFiltered(
+            client.getId(),
+            AccountType.saving,
+            AccountStatus.active,
+            now.minusSeconds(60),
+            now.plusSeconds(60)
+        );
+        assertTrue(filtered.stream().anyMatch(a -> a.getId().equals(id)));
+    }
 }

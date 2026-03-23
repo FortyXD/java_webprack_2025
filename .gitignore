@@ -1,5 +1,23 @@
-.settings/
-bin/
+# Build and Gradle caches
+.gradle/
 build/
+bin/
+out/
+
+# Local environment/config
 db.properties
+
+# Generated reports and logs
+artifacts/
+
+# Optional local fallback jars
 lib/*.jar
+
+# IDE files
+.settings/
+.idea/
+.vscode/
+*.iml
+gradle/
+gradlew
+.gitignore
