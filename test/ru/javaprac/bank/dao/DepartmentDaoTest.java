@@ -75,12 +75,32 @@ public class DepartmentDaoTest extends TestBase {
     }
 
     @Test
+    public void countClients_whenNoClients_returnsZero() {
+        Department d = new Department();
+        d.setName("Empty Dept " + System.currentTimeMillis());
+        d.setAddress("Nowhere");
+        dao.save(d);
+        assertEquals(dao.countClients(d.getId()), 0L);
+        dao.deleteIfNoClients(d.getId());
+    }
+
+    @Test
     public void sumBalanceByDepartment_returnsNumber() {
         List<Department> all = dao.findAll();
         assertFalse(all.isEmpty());
         Double sum = dao.sumBalanceByDepartment(all.get(0).getId());
         assertNotNull(sum);
         assertTrue(sum >= 0);
+    }
+
+    @Test
+    public void sumBalanceByDepartment_whenNoAccounts_returnsZero() {
+        Department d = new Department();
+        d.setName("No Accounts Dept " + System.currentTimeMillis());
+        d.setAddress("Void");
+        dao.save(d);
+        assertEquals(dao.sumBalanceByDepartment(d.getId()), 0.0);
+        dao.deleteIfNoClients(d.getId());
     }
 
     @Test

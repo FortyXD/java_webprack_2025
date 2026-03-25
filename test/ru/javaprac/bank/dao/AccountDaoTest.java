@@ -4,6 +4,9 @@ import org.testng.annotations.Test;
 import ru.javaprac.bank.entity.*;
 import ru.javaprac.bank.entity.Account;
 
+import ru.javaprac.bank.util.HibernateUtil;
+
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -68,6 +71,26 @@ public class AccountDaoTest extends TestBase {
         List<Account> active = dao.findFiltered(null, null, AccountStatus.active, null, null);
         assertNotNull(active);
         active.forEach(a -> assertEquals(a.getStatus(), AccountStatus.active));
+    }
+
+    @Test
+    public void findFiltered_allNullFilters_returnsSameAsFindAll() {
+        List<Account> all = dao.findAll();
+        List<Account> filtered = dao.findFiltered(null, null, null, null, null);
+        assertEquals(filtered.size(), all.size());
+    }
+
+    @Test
+    public void loadAccountsByIds_skipsMissingAccountRows() throws Exception {
+        Method m = AccountDao.class.getDeclaredMethod(
+            "loadAccountsByIds", org.hibernate.Session.class, List.class);
+        m.setAccessible(true);
+        try (var session = HibernateUtil.getSessionFactory().openSession()) {
+            @SuppressWarnings("unchecked")
+            List<Account> list = (List<Account>) m.invoke(null, session, List.of(999_999_999L));
+            assertNotNull(list);
+            assertTrue(list.isEmpty());
+        }
     }
 
     @Test

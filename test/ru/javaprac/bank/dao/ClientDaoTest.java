@@ -55,6 +55,20 @@ public class ClientDaoTest extends TestBase {
     }
 
     @Test
+    public void findFiltered_allNullFilters_returnsSameAsFindAll() {
+        List<Client> all = dao.findAll();
+        List<Client> filtered = dao.findFiltered(null, null, null);
+        assertEquals(filtered.size(), all.size());
+    }
+
+    @Test
+    public void findFiltered_blankSearch_actsAsNoSearchFilter() {
+        List<Client> all = dao.findAll();
+        assertEquals(dao.findFiltered(null, null, "").size(), all.size());
+        assertEquals(dao.findFiltered(null, null, "   \t").size(), all.size());
+    }
+
+    @Test
     public void findFiltered_byType_returnsMatching() {
         List<Client> natural = dao.findFiltered(null, ClientType.NATURAL_PERSON, null);
         assertNotNull(natural);
