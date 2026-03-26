@@ -67,6 +67,26 @@ public class DepartmentDaoTest extends TestBase {
     }
 
     @Test
+    public void searchByNameOrAddress_whenNoMatches_returnsEmptyList() {
+        List<Department> search = dao.searchByNameOrAddress("NoSuchDepartment-" + System.nanoTime());
+        assertNotNull(search);
+        assertTrue(search.isEmpty());
+    }
+
+    @Test
+    public void searchByNameOrAddress_trimmedQuery_matchesAddressCaseInsensitively() {
+        Department d = new Department();
+        d.setName("Address Search " + System.currentTimeMillis());
+        d.setAddress("Marker Avenue " + System.currentTimeMillis());
+        dao.save(d);
+
+        List<Department> search = dao.searchByNameOrAddress("  marker avenue  ");
+        assertTrue(search.stream().anyMatch(dep -> dep.getId().equals(d.getId())));
+
+        dao.deleteIfNoClients(d.getId());
+    }
+
+    @Test
     public void countClients_returnsCorrectCount() {
         List<Department> all = dao.findAll();
         assertFalse(all.isEmpty());
@@ -156,5 +176,46 @@ public class DepartmentDaoTest extends TestBase {
     @Test
     public void deleteIfNoClients_whenDepartmentNotFound_returnsFalse() {
         assertFalse(dao.deleteIfNoClients(999999L));
+    }
+
+    @Test
+    public void countClients_whenQueryReturnsNull_returnsZero() throws Exception {
+        StubSessionPlan plan = new StubSessionPlan().addUniqueResult(null);
+
+        long count = withTemporarySessionFactory(
+            stubSessionFactory(plan),
+            () -> dao.countClients(1L)
+        );
+
+        assertEquals(count, 0L);
+    }
+
+    @Test
+    public void sumBalanceByDepartment_whenQueryReturnsNull_returnsZero() throws Exception {
+        StubSessionPlan plan = new StubSessionPlan().addUniqueResult(null);
+
+        double sum = withTemporarySessionFactory(
+            stubSessionFactory(plan),
+            () -> dao.sumBalanceByDepartment(1L)
+        );
+
+        assertEquals(sum, 0.0);
+    }
+
+    @Test
+    public void deleteIfNoClients_whenCountQueryReturnsNull_stillDeletesExistingDepartment() throws Exception {
+        Department d = new Department();
+        d.setId(321L);
+        StubSessionPlan plan = new StubSessionPlan()
+            .addUniqueResult(null)
+            .withEntity(Department.class, d);
+
+        boolean deleted = withTemporarySessionFactory(
+            stubSessionFactory(plan),
+            () -> dao.deleteIfNoClients(d.getId())
+        );
+
+        assertTrue(deleted);
+        assertSame(plan.removedEntity(), d);
     }
 }

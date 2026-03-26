@@ -8,6 +8,9 @@
       <class name="ru.javaprac.bank.dao.CurrencyDaoTest"/>
       <class name="ru.javaprac.bank.dao.AccountDaoTest"/>
       <class name="ru.javaprac.bank.dao.StatisticsDaoTest"/>
+      <class name="ru.javaprac.bank.dao.DaoHelperCoverageTest"/>
+      <class name="ru.javaprac.bank.dao.HibernateUtilCoverageTest"/>
+      <class name="ru.javaprac.bank.dao.EntityCoverageTest"/>
     </classes>
   </test>
 </suite>

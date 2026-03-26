@@ -76,6 +76,31 @@ public class ClientDaoTest extends TestBase {
     }
 
     @Test
+    public void findFiltered_whenNoMatches_returnsEmptyList() {
+        List<Client> filtered = dao.findFiltered(null, null, "NoSuchClient-" + System.nanoTime());
+        assertNotNull(filtered);
+        assertTrue(filtered.isEmpty());
+    }
+
+    @Test
+    public void findFiltered_trimmedSearch_matchesSecondNameCaseInsensitively() {
+        Department dep = deptDao.findAll().get(0);
+        String marker = "CaseMarker" + System.currentTimeMillis();
+        Client c = new Client();
+        c.setDepartment(dep);
+        c.setType(ClientType.NATURAL_PERSON);
+        c.setSurname("TrimmedSearch" + System.currentTimeMillis());
+        c.setSecondName(marker);
+        c.setPassport("TRM-" + System.currentTimeMillis());
+        dao.save(c);
+
+        List<Client> filtered = dao.findFiltered(null, null, "  " + marker.toLowerCase() + "  ");
+        assertTrue(filtered.stream().anyMatch(x -> x.getId().equals(c.getId())));
+
+        dao.deleteIfNoOpenAccountsOrZeroBalance(c.getId());
+    }
+
+    @Test
     public void save_persistsNewClient() {
         List<Department> depts = deptDao.findAll();
         assertFalse(depts.isEmpty());
@@ -202,5 +227,23 @@ public class ClientDaoTest extends TestBase {
     @Test
     public void deleteIfNoOpenAccountsOrZeroBalance_whenClientNotFound_returnsFalse() {
         assertFalse(dao.deleteIfNoOpenAccountsOrZeroBalance(999999L));
+    }
+
+    @Test
+    public void deleteIfNoOpenAccountsOrZeroBalance_whenAggregateQueriesReturnNull_stillDeletesExistingClient() throws Exception {
+        Client c = new Client();
+        c.setId(123L);
+        StubSessionPlan plan = new StubSessionPlan()
+            .addUniqueResult(null)
+            .addUniqueResult(null)
+            .withEntity(Client.class, c);
+
+        boolean deleted = withTemporarySessionFactory(
+            stubSessionFactory(plan),
+            () -> dao.deleteIfNoOpenAccountsOrZeroBalance(c.getId())
+        );
+
+        assertTrue(deleted);
+        assertSame(plan.removedEntity(), c);
     }
 }
