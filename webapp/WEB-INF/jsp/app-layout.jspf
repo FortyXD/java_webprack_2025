@@ -1,0 +1,35 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%
+    String pageName = String.valueOf(request.getAttribute("page"));
+    String entityId = String.valueOf(request.getAttribute("entityId"));
+    String kind = String.valueOf(request.getAttribute("kind"));
+    String clientId = String.valueOf(request.getAttribute("clientId"));
+    String contextPath = request.getContextPath();
+%>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Банк | Клиенты и счета</title>
+  <link rel="stylesheet" href="<%= contextPath %>/assets/bank-web.css">
+</head>
+<body>
+  <noscript>Для работы интерфейса нужен JavaScript.</noscript>
+  <div id="bank-root"
+       data-page="<%= pageName %>"
+       data-entity-id="<%= entityId %>"
+       data-kind="<%= kind %>"
+       data-client-id="<%= clientId %>"></div>
+  <script>
+    window.bankApp = {
+      contextPath: "<%= contextPath %>",
+      page: "<%= pageName %>",
+      entityId: "<%= entityId %>",
+      kind: "<%= kind %>",
+      clientId: "<%= clientId %>"
+    };
+  </script>
+  <script type="module" src="<%= contextPath %>/assets/bank-web.js"></script>
+</body>
+</html>

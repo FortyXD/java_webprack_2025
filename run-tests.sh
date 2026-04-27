@@ -7,7 +7,7 @@ if ! ls lib/*.jar >/dev/null 2>&1; then
 fi
 
 if [ -x ./gradlew ]; then
-  exec ./gradlew test
+  exec env GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/.gradle-userhome}" ./gradlew test
 fi
 
 if command -v gradle >/dev/null 2>&1; then

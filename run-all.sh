@@ -10,15 +10,15 @@ sh download-libs.sh
   cp db.properties.example db.properties
 }
 
-if [ -x ./gradlew ]; then
-  echo "3. Инициализация БД и запуск тестов (./gradlew all)..."
-  ./gradlew all
-elif command -v gradle >/dev/null 2>&1; then
-  echo "3. Инициализация БД и запуск тестов (gradle all)..."
-  gradle all
-elif command -v ant >/dev/null 2>&1; then
-  echo "3. Инициализация БД и запуск тестов (ant all)..."
+if command -v ant >/dev/null 2>&1; then
+  echo "3. Полная Ant-сборка: БД, DAO-тесты, React/Tailwind, WAR, deploy..."
   ant all
+elif [ -x ./gradlew ]; then
+  echo "3. Инициализация БД и запуск DAO-тестов (./gradlew all)..."
+  GRADLE_USER_HOME="${GRADLE_USER_HOME:-$PWD/.gradle-userhome}" ./gradlew all
+elif command -v gradle >/dev/null 2>&1; then
+  echo "3. Инициализация БД и запуск DAO-тестов (gradle all)..."
+  gradle all
 else
   echo "3. Ant не найден, используем psql + javac + java..."
   DB_HOST=$(grep '^db.host=' db.properties 2>/dev/null | cut -d= -f2); DB_HOST=${DB_HOST:-localhost}

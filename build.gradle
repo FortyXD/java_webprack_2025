@@ -50,6 +50,15 @@ dependencies {
     implementation "com.fasterxml:classmate:1.6.0"
     implementation "org.antlr:antlr4-runtime:4.13.1"
     implementation "org.slf4j:slf4j-api:2.0.9"
+    implementation "org.springframework:spring-webmvc:6.1.14"
+    implementation "io.micrometer:micrometer-observation:1.12.11"
+    implementation "jakarta.annotation:jakarta.annotation-api:2.1.1"
+    compileOnly "jakarta.servlet:jakarta.servlet-api:6.0.0"
+    compileOnly "jakarta.servlet.jsp:jakarta.servlet.jsp-api:3.1.1"
+    implementation "org.apache.tomcat.embed:tomcat-embed-core:10.1.34"
+    implementation "org.apache.tomcat.embed:tomcat-embed-jasper:10.1.34"
+    implementation "org.apache.tomcat.embed:tomcat-embed-websocket:10.1.34"
+    implementation "org.eclipse.jdt:ecj:3.39.0"
     runtimeOnly "org.slf4j:slf4j-simple:2.0.9"
     runtimeOnly "org.postgresql:postgresql:42.7.3"
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:4.0.2"
@@ -86,6 +95,8 @@ sourceSets {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
+    options.release = 17
+    options.compilerArgs += ["-parameters"]
 }
 
 test {
@@ -210,6 +221,6 @@ tasks.register("initDb") {
 
 tasks.register("all") {
     group = "build"
-    description = "Initialize DB and run tests"
+    description = "Initialize DB and run DAO tests"
     dependsOn "initDb", "test"
 }

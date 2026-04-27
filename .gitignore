@@ -3,6 +3,10 @@
 build/
 bin/
 out/
+node_modules/
+webapp/assets/
+build/python-deps/
+tomcat.*/
 
 # Local environment/config
 db.properties

@@ -15,12 +15,22 @@
   <property name="db.admin.url" value="jdbc:postgresql://${db.host}:${db.port}/postgres"/>
 
   <property name="jdbc.jar" value="lib/postgresql-42.7.3.jar"/>
+  <property name="java.release" value="17"/>
   <property name="src.dir" value="src"/>
   <property name="build.dir" value="build/classes"/>
   <property name="test.src.dir" value="test"/>
   <property name="test.build.dir" value="build/test-classes"/>
   <property name="test.reports.dir" value="build/test-reports"/>
   <property name="test.suite" value="test/testng.xml"/>
+  <property name="webapp.dir" value="webapp"/>
+  <property name="web.build.dir" value="build/webapp"/>
+  <property name="war.file" value="build/bank.war"/>
+  <property name="deploy.dir" value="build/deploy"/>
+  <property name="web.port" value="8080"/>
+  <property name="web.contextPath" value="/bank"/>
+  <property name="webtest.baseUrl" value="http://localhost:${web.port}/bank"/>
+  <property name="system.test.dir" value="system-tests"/>
+  <property name="python.deps.dir" value="build/python-deps"/>
 
   <path id="jdbc.classpath">
     <pathelement location="${jdbc.jar}"/>
@@ -40,10 +50,16 @@
   <target name="help">
     <echo>
 Targets:
-  ant all           - всё в одном: init + compile + test
+  ant all           - всё в одном: init + unit tests + WAR + deploy в build/deploy
   ant compile       - компиляция проекта
   ant compile-tests - компиляция тестов
   ant test          - запуск тестов TestNG
+  ant frontend-build- сборка React + Tailwind в webapp/assets
+  ant war           - сборка WAR приложения
+  ant deploy        - копирование WAR в build/deploy
+  ant deploy-tomcat - копирование WAR в -Dtomcat.webapps.dir=/path/to/tomcat/webapps
+  ant run-web       - запуск приложения на встроенном Tomcat
+  ant system-test   - запуск Selenium системных тестов против webtest.baseUrl
   ant create        - создать БД + создать схему (таблицы/типы)
   ant init          - create + заполнить данными
   ant show          - вывести содержимое таблиц (SELECT)
@@ -56,6 +72,9 @@ Targets:
     <mkdir dir="${build.dir}"/>
     <javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="project.classpath"
            includeantruntime="false" debug="true" encoding="UTF-8">
+      <compilerarg value="--release"/>
+      <compilerarg value="${java.release}"/>
+      <compilerarg value="-parameters"/>
       <include name="**/*.java"/>
     </javac>
     <copy todir="${build.dir}">
@@ -67,6 +86,9 @@ Targets:
     <mkdir dir="${test.build.dir}"/>
     <javac srcdir="${test.src.dir}" destdir="${test.build.dir}" classpathref="test.classpath"
            includeantruntime="false" debug="true" encoding="UTF-8">
+      <compilerarg value="--release"/>
+      <compilerarg value="${java.release}"/>
+      <compilerarg value="-parameters"/>
       <include name="**/*.java"/>
     </javac>
   </target>
@@ -164,6 +186,98 @@ Targets:
   <target name="create" depends="create-db,schema"/>
   <target name="init" depends="create,clear,seed"/>
 
-  <target name="all" depends="init,test" description="Всё в одном: init + compile + test"/>
+  <target name="check-node-modules">
+    <available file="node_modules/vite" property="node.modules.present"/>
+  </target>
+
+  <target name="frontend-install" depends="check-node-modules" unless="node.modules.present">
+    <exec executable="npm" failonerror="true">
+      <arg value="install"/>
+    </exec>
+  </target>
+
+  <target name="frontend-build" depends="frontend-install">
+    <exec executable="npm" failonerror="true">
+      <arg value="run"/>
+      <arg value="build"/>
+    </exec>
+  </target>
+
+  <target name="war" depends="compile,frontend-build" description="Собрать WAR приложения">
+    <delete dir="${web.build.dir}"/>
+    <mkdir dir="${web.build.dir}"/>
+    <copy todir="${web.build.dir}">
+      <fileset dir="${webapp.dir}"/>
+    </copy>
+    <mkdir dir="${web.build.dir}/WEB-INF/classes"/>
+    <copy todir="${web.build.dir}/WEB-INF/classes">
+      <fileset dir="${build.dir}"/>
+    </copy>
+    <mkdir dir="${web.build.dir}/WEB-INF/lib"/>
+    <copy todir="${web.build.dir}/WEB-INF/lib">
+      <fileset dir="lib" includes="*.jar"
+               excludes="jakarta.servlet-api-*.jar,jakarta.servlet.jsp-api-*.jar,tomcat-embed-*.jar,tomcat-annotations-api-*.jar,ecj-*.jar"/>
+    </copy>
+    <war destfile="${war.file}" webxml="${webapp.dir}/WEB-INF/web.xml">
+      <fileset dir="${web.build.dir}" excludes="WEB-INF/web.xml"/>
+    </war>
+  </target>
+
+  <target name="deploy" depends="war" description="Развернуть WAR в локальный каталог build/deploy">
+    <mkdir dir="${deploy.dir}"/>
+    <copy file="${war.file}" todir="${deploy.dir}" overwrite="true"/>
+    <echo message="WAR deployed to ${deploy.dir}/bank.war"/>
+  </target>
+
+  <target name="deploy-tomcat" depends="war" if="tomcat.webapps.dir"
+          description="Развернуть WAR в каталог webapps внешнего Tomcat">
+    <copy file="${war.file}" tofile="${tomcat.webapps.dir}/bank.war" overwrite="true"/>
+    <echo message="WAR deployed to ${tomcat.webapps.dir}/bank.war"/>
+  </target>
+
+  <target name="run-web" depends="compile,frontend-build" description="Запустить приложение на встроенном Tomcat">
+    <java classname="ru.javaprac.bank.web.EmbeddedServer" classpathref="project.classpath"
+          failonerror="true" fork="true">
+      <sysproperty key="web.port" value="${web.port}"/>
+      <sysproperty key="web.contextPath" value="${web.contextPath}"/>
+      <sysproperty key="webapp.dir" value="${webapp.dir}"/>
+      <sysproperty key="web.classes.dir" value="${build.dir}"/>
+      <sysproperty key="hibernate.connection.url" value="${db.url}"/>
+      <sysproperty key="hibernate.connection.username" value="${db.user}"/>
+      <sysproperty key="hibernate.connection.password" value="${db.pass}"/>
+    </java>
+  </target>
+
+  <target name="check-python-selenium">
+    <available file="${python.deps.dir}/selenium" property="python.selenium.present"/>
+  </target>
+
+  <target name="selenium-install" depends="check-python-selenium" unless="python.selenium.present">
+    <mkdir dir="${python.deps.dir}"/>
+    <exec executable="python3" failonerror="true">
+      <arg value="-m"/>
+      <arg value="pip"/>
+      <arg value="install"/>
+      <arg value="-r"/>
+      <arg value="${system.test.dir}/requirements.txt"/>
+      <arg value="--target"/>
+      <arg value="${python.deps.dir}"/>
+    </exec>
+  </target>
+
+  <target name="system-test" depends="selenium-install" description="Запустить Selenium системные тесты">
+    <exec executable="python3" failonerror="true">
+      <env key="PYTHONPATH" value="${python.deps.dir}"/>
+      <env key="WEBTEST_BASE_URL" value="${webtest.baseUrl}"/>
+      <env key="NO_PROXY" value="localhost,127.0.0.1"/>
+      <env key="no_proxy" value="localhost,127.0.0.1"/>
+      <arg value="-m"/>
+      <arg value="pytest"/>
+      <arg value="-q"/>
+      <arg value="${system.test.dir}"/>
+    </exec>
+  </target>
+
+  <target name="all" depends="init,test,war,deploy" description="Всё в одном: init + unit tests + WAR + deploy"/>
 
 </project>
